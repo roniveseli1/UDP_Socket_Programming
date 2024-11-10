@@ -96,6 +96,15 @@ void handleReadDir(int serverSocket, const string &directory, sockaddr_in &clien
     sendMessageToClient(serverSocket, dirContents, clientAddr);
 }
 
+string getCurrentTimestamp() {
+    auto now = chrono::system_clock::now();
+    time_t timeNow = chrono::system_clock::to_time_t(now);
+
+    char buffer[100];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime(&timeNow));
+    return string(buffer);
+}
+
 int main(){
     
 
