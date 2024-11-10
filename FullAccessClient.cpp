@@ -68,13 +68,6 @@ int main() {
         buffer[receivedBytes] = '\0';
         cout << "Data received from server: " << buffer << endl;
     }
-
-
-        
-    }
-    
-
-
     close(clientSocket);
     return 0;
 }
