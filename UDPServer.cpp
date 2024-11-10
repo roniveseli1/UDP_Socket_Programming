@@ -27,6 +27,9 @@ void sendMessageToClient(int serverSocket, const string &message, sockaddr_in &c
 string clientToString(const sockaddr_in &clientAddr) {
     return inet_ntoa(clientAddr.sin_addr) + string(":") + to_string(ntohs(clientAddr.sin_port));
 }
+bool hasFullAccess(const sockaddr_in& clientAddr) {
+    return ntohs(clientAddr.sin_port) == 1515;
+}
 
 void handleRead(int serverSocket, const string &filename, sockaddr_in &clientAddr) {
     ifstream inFile(filename);
@@ -98,6 +101,35 @@ void handleReadDir(int serverSocket, const string &directory, sockaddr_in &clien
     closedir(dir);
 
     sendMessageToClient(serverSocket, dirContents, clientAddr);
+}
+void handleListClients(int serverSocket, sockaddr_in &clientAddr) {
+    string clientList = "Connected clients:\n";
+    for (const auto& client : clients) {
+        clientList += client + "\n";
+    }
+    sendMessageToClient(serverSocket, clientList, clientAddr);
+}
+
+void disconnectInactiveClients(int serverSocket) {
+    while (true) {
+        time_t currentTime = time(nullptr);
+        for (auto it = clients.begin(); it != clients.end();) {
+            if (currentTime - clientLastActivity[*it] > timeoutSeconds) {
+                sockaddr_in clientAddr = {};
+                string ip = (*it).substr(0, (*it).find(':'));
+                int port = stoi((*it).substr((*it).find(':') + 1));
+                inet_pton(AF_INET, ip.c_str(), &clientAddr.sin_addr);
+                clientAddr.sin_port = htons(port);
+                cout << "Client " << *it << " disconnected due to inactivity." << endl;
+
+                clientLastActivity.erase(*it);
+                it = clients.erase(it);  // Remove the client from the set
+            } else {
+                ++it;
+            }
+        }
+        this_thread::sleep_for(chrono::seconds(1));
+    }
 }
 
 string getCurrentTimestamp() {
