@@ -35,6 +35,17 @@ void handleRead(int serverSocket, const string &filename, sockaddr_in &clientAdd
     }
 }
 
+void handleWrite(int serverSocket, const string &data, sockaddr_in &clientAddr) {
+    ofstream outFile("server_output.txt", ios::app);
+    if (outFile.is_open()) {
+        outFile << data << endl;
+        outFile.close();
+        sendMessageToClient(serverSocket, "Data written to file successfully.", clientAddr);
+    } else {
+        sendMessageToClient(serverSocket, "Failed to write data to file.", clientAddr);
+    }
+}
+
 
 int main(){
     
