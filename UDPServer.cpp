@@ -105,6 +105,20 @@ string getCurrentTimestamp() {
     return string(buffer);
 }
 
+void logRequest(const string &clientIP, const string &request) {
+    string timestamp = getCurrentTimestamp();
+
+    cout << "[" << timestamp << "] Client IP: " << clientIP << ", Request: " << request << endl;
+
+    ofstream logFile("server_log.txt", ios::app);
+    if (logFile.is_open()) {
+        logFile << "[" << timestamp << "] Client IP: " << clientIP << ", Request: " << request << endl;
+        logFile.close();
+    } else {
+        cerr << "Error opening log file!" << endl;
+    }
+}
+
 int main(){
     
 
