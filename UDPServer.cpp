@@ -15,6 +15,15 @@
 
 using namespace std;
 
+set<string> clients;
+unordered_map<string, time_t> clientLastActivity;
+const int timeoutSeconds = 30;
+
+void sendMessageToClient(int serverSocket, const string &message, sockaddr_in &clientAddr) {
+    sendto(serverSocket, message.c_str(), message.size(), 0, (sockaddr*)&clientAddr, sizeof(clientAddr));
+    cout << "Message sent to client: " << message << endl;
+}
+
 void handleRead(int serverSocket, const string &filename, sockaddr_in &clientAddr) {
     ifstream inFile(filename);
     if (!inFile) {
