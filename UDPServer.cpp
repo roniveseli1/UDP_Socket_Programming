@@ -123,8 +123,101 @@ void logRequest(const string &clientIP, const string &request) {
     }
 }
 
-int main(){
-    
+//MAIN
+int main() {
+    const int serverPort = 1200;
+    const int bufferSize = 2048;
 
+    int serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (serverSocket < 0) {
+        cerr << "Failed to create socket." << endl;
+        return 1;
+    }
+
+    sockaddr_in serverAddr = {};
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(serverPort);
+
+    if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        cerr << "Binding failed." << endl;
+        close(serverSocket);
+        return 1;
+    }
+
+    cout << "Server started on port " << serverPort << endl;
+
+    thread(disconnectInactiveClients, serverSocket).detach();  
+
+    while (true) {
+        char buffer[bufferSize];
+        sockaddr_in clientAddr = {};
+        socklen_t clientAddrLen = sizeof(clientAddr);
+
+        int receivedBytes = recvfrom(serverSocket, buffer, bufferSize - 1, 0, (sockaddr*)&clientAddr, &clientAddrLen);
+        if (receivedBytes < 0) {
+            cerr << "Failed to receive data." << endl;
+            continue;
+        }
+
+        buffer[receivedBytes] = '\0';
+        string clientMessage(buffer);
+        string clientInfo = clientToString(clientAddr);
+
+        clientLastActivity[clientInfo] = time(nullptr);  
+
+        if (clientMessage == "DISCONNECT") {
+            clients.erase(clientInfo);
+            clientLastActivity.erase(clientInfo);
+            sendMessageToClient(serverSocket, "You have been disconnected.", clientAddr);
+            cout << "Client " << clientInfo << " manually disconnected." << endl;
+            continue;
+        }
+
+        if (clients.size() >= 4 && clients.find(clientInfo) == clients.end()) {
+            sendMessageToClient(serverSocket, "Server is full", clientAddr);
+            continue;
+        }
+
+        clients.insert(clientInfo);
+        cout << "-------------------------------" << endl;
+        cout << "Client connected from " << clientInfo << endl;
+        cout << "Request from client: " << clientMessage << endl;
+
+        
+        if (hasFullAccess(clientAddr)) {
+            if (clientMessage == "LIST") {
+                handleListClients(serverSocket, clientAddr);
+            } else if (clientMessage.substr(0, 4) == "READ") {
+                string filename = clientMessage.substr(5);
+                handleRead(serverSocket, filename, clientAddr);
+            } else if (clientMessage.substr(0, 5) == "WRITE") {
+                string data = clientMessage.substr(6);
+                handleWrite(serverSocket, data, clientAddr);
+            } else if (clientMessage.substr(0, 7) == "EXECUTE") {
+                string command = clientMessage.substr(8);
+                handleExecute(serverSocket, command, clientAddr);
+            } else if (clientMessage.substr(0, 7) == "DIRREAD") {
+                string directory = clientMessage.substr(8);
+                handleReadDir(serverSocket, directory, clientAddr);
+            } else {
+                sendMessageToClient(serverSocket, "Unknown command.", clientAddr);
+            }
+        } else {
+            if (clientMessage.substr(0, 4) == "READ") {
+                string filename = clientMessage.substr(5);
+                handleRead(serverSocket, filename, clientAddr);
+            } else {
+                sendMessageToClient(serverSocket, "You only have access to the READ command.", clientAddr);
+            }
+        }
+        
+         logRequest(clientInfo, clientMessage);
+        
+    }
+
+    close(serverSocket);
     return 0;
 }
+
+
