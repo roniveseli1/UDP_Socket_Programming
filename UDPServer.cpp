@@ -24,6 +24,10 @@ void sendMessageToClient(int serverSocket, const string &message, sockaddr_in &c
     cout << "Message sent to client: " << message << endl;
 }
 
+string clientToString(const sockaddr_in &clientAddr) {
+    return inet_ntoa(clientAddr.sin_addr) + string(":") + to_string(ntohs(clientAddr.sin_port));
+}
+
 void handleRead(int serverSocket, const string &filename, sockaddr_in &clientAddr) {
     ifstream inFile(filename);
     if (!inFile) {
