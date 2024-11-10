@@ -41,7 +41,33 @@ int main() {
 
     while (true)
     {
-        
+        string userInput;
+        cout << "Enter a request or type 'exit' to close the connection: ";
+        getline(cin, userInput);
+
+        // Send the message to the server
+        sendto(clientSocket, userInput.c_str(), userInput.size(), 0,
+            (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+        if (userInput == "exit") {
+            break;
+        }
+
+        char buffer[bufferSize];
+        sockaddr_in fromAddr = {};
+        socklen_t fromAddrLen = sizeof(fromAddr);
+
+        // Receive the response from the server
+        int receivedBytes = recvfrom(clientSocket, buffer, bufferSize - 1, 0,
+            (sockaddr*)&fromAddr, &fromAddrLen);
+        if (receivedBytes < 0) {
+            cerr << "Failed to receive data." << endl;
+            continue;
+        }
+
+        buffer[receivedBytes] = '\0';
+        cout << "Data received from server: " << buffer << endl;
+    }
 
 
         
