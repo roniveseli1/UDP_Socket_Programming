@@ -46,6 +46,28 @@ void handleWrite(int serverSocket, const string &data, sockaddr_in &clientAddr) 
     }
 }
 
+void handleExecute(int serverSocket, const string &command, sockaddr_in &clientAddr) {
+    char buffer[128];
+    string result;
+    FILE* pipe = popen(command.c_str(), "r");
+
+    if (!pipe) {
+        sendMessageToClient(serverSocket, "Failed to execute command.", clientAddr);
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        result += buffer;
+    }
+    pclose(pipe);
+
+    if (!result.empty()) {
+        sendMessageToClient(serverSocket, result, clientAddr);
+    } else {
+        sendMessageToClient(serverSocket, "No output from command.", clientAddr);
+    }
+}
+
 
 int main(){
     
