@@ -68,6 +68,24 @@ void handleExecute(int serverSocket, const string &command, sockaddr_in &clientA
     }
 }
 
+void handleReadDir(int serverSocket, const string &directory, sockaddr_in &clientAddr) {
+    DIR* dir = opendir(directory.c_str());
+    if (!dir) {
+        sendMessageToClient(serverSocket, "Error: Could not open directory: " + directory, clientAddr);
+        return;
+    }
+
+    struct dirent* entry;
+    string dirContents = "Directory contents:\n";
+    while ((entry = readdir(dir)) != nullptr) {
+        dirContents += entry->d_name;
+        dirContents += (entry->d_type == DT_DIR) ? "/" : "";  // Append '/' for directories
+        dirContents += "\n";
+    }
+    closedir(dir);
+
+    sendMessageToClient(serverSocket, dirContents, clientAddr);
+}
 
 int main(){
     
